@@ -245,18 +245,20 @@ class Kestra:
         Returns:
             list[dict[str, Any]]: returns the list of dictionaries
         """
-        with open(path_, "rb") as file:
-            # Stream instead of reading all at once
-            ion_data = ion.load(file, single_value=False)
-            
-            # Use generator expression for memory-efficient processing
-            converted_records = (
-                {k: Kestra._convert_ion_types(v) for k, v in dict(record).items()}
-                for record in ion_data
-            )
-            
-            return list(converted_records)
+        converted_records: list[dict[str, Any]] = []
 
+        with open(path_, "rb") as file:
+            # ion.load() yields one top-level Ion object (a record) at a time
+            for ion_record in ion.load(file, single_value=False):
+                # 1. Convert the single ion_record to a dictionary
+                # 2. Apply your type conversion to its values
+                # 3. Append the resulting dictionary to your list
+                converted_record = {
+                    k: Kestra._convert_ion_types(v) for k, v in dict(ion_record).items()
+                }
+                converted_records.append(converted_record)
+
+        return converted_records
 
 class LogFormatter(logging.Formatter):
     def formatTime(self, record, datefmt=None):
