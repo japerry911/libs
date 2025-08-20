@@ -236,7 +236,8 @@ class Kestra:
     @staticmethod
     def read(path_: str) -> list[dict[str, Any]]:
         """
-        Read an Ion file and convert it to a list of dictionaries.
+        Read an Ion file and convert it to a list of dictionaries using a 
+        memory-efficient streaming approach.
 
         Args:
             path_ (str): The path to the Ion file.
@@ -245,16 +246,16 @@ class Kestra:
             list[dict[str, Any]]: returns the list of dictionaries
         """
         with open(path_, "rb") as file:
-            ion_content = file.read()
-
-        ion_data = ion.loads(ion_content, single_value=False)
-        list_of_dicts = [dict(record) for record in ion_data]
-        list_of_dicts = [
-            {k: Kestra._convert_ion_types(v) for k, v in record.items()}
-            for record in list_of_dicts
-        ]
-
-        return list_of_dicts
+            # Stream instead of reading all at once
+            ion_data = ion.load(file, single_value=False)
+            
+            # Use generator expression for memory-efficient processing
+            converted_records = (
+                {k: Kestra._convert_ion_types(v) for k, v in dict(record).items()}
+                for record in ion_data
+            )
+            
+            return list(converted_records)
 
 
 class LogFormatter(logging.Formatter):
